@@ -1,0 +1,13 @@
+service1:
+  url: "slack://token@channel"
+  is_default: true
+  tags:
+    - alert
+    - monitoring
+
+service2:
+  url: "discord://token@channel"
+  is_default: false
+  tags:
+    - logs
+    - debug

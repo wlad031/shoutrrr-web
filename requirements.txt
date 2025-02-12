@@ -1,0 +1,2 @@
+flask
+git+https://github.com/wlad031/common-python.git@0.1.1
