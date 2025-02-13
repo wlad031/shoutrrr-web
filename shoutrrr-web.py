@@ -143,8 +143,7 @@ def build_message(data):
     """Build the message string from the incoming data."""
     if "message" in data:
         return data["message"]
-    else:
-        return f"Unknown message:\n{json.dumps(data)}"
+    return f"Unknown message:\n{json.dumps(data)}"
 
 
 @app.route("/send", methods=["POST"])
@@ -159,7 +158,7 @@ def send():
     len_success = len([r for r in send_result if r["success"]])
     if send_result and len_success == len(send_result):
         return jsonify({"status": "success", "message": "Notification sent"}), 200
-    elif send_result and len_success > 0:
+    if send_result and len_success > 0:
         return (
             jsonify(
                 {
@@ -171,8 +170,7 @@ def send():
             ),
             200,
         )
-    else:
-        return jsonify({"status": "error", "message": "Notification failed"}), 500
+    return jsonify({"status": "error", "message": "Notification failed"}), 500
 
 
 def main():
