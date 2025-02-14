@@ -1,17 +1,26 @@
 name: Build and Push Docker Image
 
-permissions:
-  contents: read
-  packages: write
-
 on:
   push:
     tags:
       - '[0-9]+\.[0-9]+\.[0-9]+'
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  USERNAME: ${{ github.actor }}
+
 jobs:
+
   build:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -22,8 +31,8 @@ jobs:
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.USERNAME }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image
@@ -32,5 +41,5 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/shoutrrr-web:${{ github.ref_name }}
+          tags: ${{ env.REGISTRY }}/${{ IMAGE_NAME }}:${{ github.ref_name }}
 
