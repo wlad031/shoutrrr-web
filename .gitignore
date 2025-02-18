@@ -1,4 +1,6 @@
+config.yml
 keys.txt
+api_keys.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

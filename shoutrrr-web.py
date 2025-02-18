@@ -20,14 +20,12 @@ app.before_request(log_request_info)
 def load_config(config_path=None):
     """Load the notification configuration from a YAML file."""
     if not config_path:
-        config_path = os.getenv("CONFIG_PATH")
-    if config_path and not os.path.exists(config_path):
+        config_path = os.getenv("CONFIG_PATH", "config.yml")
+    if not os.path.exists(config_path):
         app.logger.error(f"Config file {config_path} does not exist")
         exit(1)
-    if not config_path:
-        app.logger.debug("No config file specified")
-        return {}
     try:
+        app.logger.info(f"Loading configuration from {config_path}")
         with open(config_path, "r") as f:
             config = yaml.safe_load(f)
         app.logger.info(f"Loaded configuration: {config}")
