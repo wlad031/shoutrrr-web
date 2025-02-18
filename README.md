@@ -79,7 +79,7 @@ You can run shoutrrr-web using Docker Compose. Here's a basic example:
 version: '3'
 services:
   shoutrrr-web:
-    image: wlad031/shoutrrr-web:0.1.0
+    image: ghcr.io/wlad031/shoutrrr-web:0.2.1
     environment:
       - PORT=80
       - CONFIG_PATH=/config/config.yml
