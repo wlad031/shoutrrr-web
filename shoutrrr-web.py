@@ -2,6 +2,7 @@ import subprocess
 import os
 import json
 import yaml
+import re
 from flask import Flask, request, jsonify
 from common_python import (
     configure_logging,
@@ -78,6 +79,13 @@ def get_shoutrrr_binary():
     return os.getenv("SHOUTRRR_BINARY", "shoutrrr")
 
 
+def prepare_message(message, url):
+    """Prepare the message for sending to a particular URL."""
+    if url.startswith("telegram:") and "parseMode=MarkdownV2" in url:
+       return re.sub(r'([!\-#])', r'\\\1', message)
+    return message
+
+
 def send_notification(shoutrrr, config, message, tags=None):
     """Send a notification using the shoutrrr binary based on tags."""
     res = []
@@ -90,6 +98,7 @@ def send_notification(shoutrrr, config, message, tags=None):
                 continue
             try:
                 app.logger.info(f"Sending message to {name}: {message}")
+                message = prepare_message(message, url)
                 subprocess.run(
                     [shoutrrr, "send", "--url", url, "--message", message],
                     stdout=subprocess.PIPE,
