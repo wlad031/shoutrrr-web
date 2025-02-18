@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1](https://github.com/wlad031/shoutrrr-web/releases/tag/v0.2.1) - 2025-02-18
+
+### Added
+- Escaping for special characters in Telegram MarkdownV2 messages
+
 ## [0.2.0](https://github.com/wlad031/shoutrrr-web/releases/tag/v0.2.0) - 2025-02-18
 
 Since I'm made changes in [common-python](https://github.com/wlad031/common-python) library, the same applies here.
