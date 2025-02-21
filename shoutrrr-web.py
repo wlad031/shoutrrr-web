@@ -29,49 +29,20 @@ def load_config(config_path=None):
         app.logger.info(f"Loading configuration from {config_path}")
         with open(config_path, "r") as f:
             config = yaml.safe_load(f)
-        app.logger.info(f"Loaded configuration: {config}")
-        return config
+        config_with_service_names = {}
+        for name, service in config.items():
+            config_with_service_names[name] = {
+                    "name": name,
+                    "url": service.get("url"),
+                    "is_default": service.get("is_default", False),
+                    "tags": service.get("tags", []),
+            }
+        config_string = yaml.dump(config_with_service_names, default_flow_style=False)
+        app.logger.info(f"Loaded configuration:\n{config_string}")
+        return config_with_service_names
     except Exception as e:
         app.logger.error(f"Failed to load configuration from {config_path}: {str(e)}")
         exit(1)
-
-
-def verify_shoutrrr_installed(shoutrrr):
-    """Verify that the shoutrrr binary is installed."""
-    try:
-        subprocess.run(
-            [shoutrrr, "--help"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=True,
-        )
-    except subprocess.CalledProcessError as e:
-        app.logger.error(f"Shoutrrr binary check failed: {e.stderr.strip()}")
-        exit(1)
-
-
-def verify_urls(shoutrrr, config):
-    """Verify all URLs in the configuration."""
-    urls = [c.get("url") for name, c in config.items() if c.get("url")]
-    if not urls:
-        app.logger.error("No Shoutrrr URLs found. Exiting.")
-        exit(1)
-    for url in urls:
-        try:
-            app.logger.debug(f"Verifying URL: {url}")
-            output = subprocess.run(
-                [shoutrrr, "verify", "--url", url],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                check=True,
-            )
-            app.logger.info(f"Verification successful for {url}:\n{output.stdout}")
-        except subprocess.CalledProcessError as e:
-            app.logger.error(
-                f"Verification failed for URL: {url}. Error: {e.stderr.strip()}"
-            )
-            exit(1)
 
 
 def get_shoutrrr_binary():
@@ -79,70 +50,110 @@ def get_shoutrrr_binary():
     return os.getenv("SHOUTRRR_BINARY", "shoutrrr")
 
 
-def prepare_message(message, url):
+config = load_config()
+shoutrrr = get_shoutrrr_binary()
+
+
+def verify_shoutrrr_installed(shoutrrr):
+    """Verify that the shoutrrr binary is installed."""
+    try:
+        output = subprocess.run(
+            [shoutrrr, "--version"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True,
+        )
+        app.logger.info(f"Detected shoutrrr:{shoutrrr}\n{output.stdout}")
+    except subprocess.CalledProcessError as e:
+        app.logger.error(f"Shoutrrr binary check failed: {e.stderr.strip()}")
+        exit(1)
+
+
+def verify_urls(shoutrrr, config):
+    """Verify all URLs in the configuration."""
+    for service in config.values():
+        url = service.get("url", None)
+        if not service.get("url", None):
+            app.logger.error(f"Service {service.get('name')} has no URL")
+            exit(1)
+        try:
+            app.logger.info(f"Verifying URL:\n{url}")
+            output = subprocess.run(
+                [shoutrrr, "verify", "--url", url],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=True,
+            )
+            app.logger.info(f"Verification successful:\n{output.stdout}")
+        except subprocess.CalledProcessError as e:
+            app.logger.error(
+                f"Verification failed for URL: {url}. Error: {e.stderr.strip()}"
+            )
+            exit(1)
+
+
+def prepare_message(message, service):
     """Prepare the message for sending to a particular URL."""
-    if url.startswith("telegram:") and "parseMode=MarkdownV2" in url:
-       return re.sub(r'([!\-#])', r'\\\1', message)
+    url = service.get("url")
+    if url.startswith("telegram:"):
+        app.logger.debug(f"Service: Telegram: {service.get('name')}")
+        if "parseMode=MarkdownV2" in url:
+            app.logger.debug(f"Service: Telegram MarkdownV2: {service.get('name')}")
+            message = re.sub(r"([!\.\-#])", r"\\\1", message)
+            app.logger.debug(f"Escaped message for Telegram MarkdownV2:\n{message}")
     return message
+
+
+def choose_services(config, tags=None):
+    result = []
+    if not tags:
+        app.logger.debug(f"No tags requested, looking for default services...")
+        result = [
+            (name, service)
+            for name, service in config.items()
+            if service.get("is_default", False)
+        ]
+        if not result:
+            app.logger.error("No default URLs found. Check configuration.")
+    else:
+        requested_tags = [tag.lower() for tag in tags]
+        result = [
+            (name, service)
+            for name, service in config.items()
+            if any(rt in service.get("tags", []) for rt in requested_tags)
+        ]
+        if not result:
+            app.logger.error(
+                f"Requested tags: {tags}, but no matching configuration found"
+            )
+    return result
 
 
 def send_notification(shoutrrr, config, message, tags=None):
     """Send a notification using the shoutrrr binary based on tags."""
+
+    target_services = choose_services(config, tags)
+
     res = []
-    if not tags:
-        for name, c in config.items():
-            if not c.get("is_default", False):
-                continue
-            url = c.get("url")
-            if not url:
-                continue
-            try:
-                app.logger.info(f"Sending message to {name}: {message}")
-                message = prepare_message(message, url)
-                subprocess.run(
-                    [shoutrrr, "send", "--url", url, "--message", message],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    check=True,
-                )
-                app.logger.info(f"Message sent successfully to {name}")
-                res.append({"url": url, "success": True})
-            except subprocess.CalledProcessError as e:
-                app.logger.error(f"Error sending message to {url}: {e.stderr.strip()}")
-                res.append({"url": url, "success": False})
-        if not res:
-            app.logger.error("No default URLs found. Check configuration.")
-    else:
-        requested_tags = [tag.lower() for tag in tags]
-        for name, c in config.items():
-            item_tags = c.get("tags", [])
-            item_tags_lower = [t.lower() for t in item_tags]
-            if not any(rt in item_tags_lower for rt in requested_tags):
-                continue
-            url = c.get("url")
-            if not url:
-                continue
-            try:
-                app.logger.info(
-                    f"Sending message to {name} (tags: {item_tags}): {message}"
-                )
-                subprocess.run(
-                    [shoutrrr, "send", "--url", url, "--message", message],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    check=True,
-                )
-                app.logger.info(f"Message sent successfully to {name}")
-                res.append({"url": url, "success": True})
-            except subprocess.CalledProcessError as e:
-                app.logger.error(f"Error sending message to {url}: {e.stderr.strip()}")
-                res.append({"url": url, "success": False})
-        if not res:
-            app.logger.error(
-                f"Requested tags: {tags}, but no matching configuration found"
+    for name, service in target_services:
+        url = service.get("url")
+        try:
+            app.logger.info(f"Sending message to {name}:\n{message}")
+            message = prepare_message(message, service)
+            subprocess.run(
+                [shoutrrr, "send", "--url", url, "--message", message],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=True,
             )
+            app.logger.info(f"Message sent successfully to {name}")
+            res.append({"url": url, "success": True})
+        except subprocess.CalledProcessError as e:
+            app.logger.error(f"Error sending message to {url}: {e.stderr.strip()}")
+            res.append({"url": url, "success": False})
     return res
 
 
@@ -156,8 +167,6 @@ def build_message(data):
 @app.route("/send", methods=["POST"])
 @require_api_key
 def send():
-    shoutrrr = get_shoutrrr_binary()
-    config = load_config()
     data = request.json or {}
     message = build_message(data)
     tags = data.get("tags", None)
@@ -181,8 +190,6 @@ def send():
 
 
 def main():
-    shoutrrr = get_shoutrrr_binary()
-    config = load_config()
     verify_shoutrrr_installed(shoutrrr)
     verify_urls(shoutrrr, config)
 
