@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2](https://github.com/wlad031/shoutrrr-web/releases/tag/v0.2.2) - 2025-02-21
+
+This release doesn't bring significant changes, just a little bit better logging and refactoring.
+
 ## [0.2.1](https://github.com/wlad031/shoutrrr-web/releases/tag/v0.2.1) - 2025-02-18
 
 ### Added
