@@ -2,7 +2,7 @@
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/wlad031/shoutrrr-web)](https://github.com/wlad031/shoutrrr-web/releases)
 [![Docker Pulls](https://img.shields.io/docker/pulls/wlad031/shoutrrr-web)](https://hub.docker.com/r/wlad031/shoutrrr-web)
-[![License](https://img.shields.io/github/license/wlad031/shoutrrr-web)](https://github.com/wlad031/shoutrrr-web/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/wlad031/shoutrrr-web)](https://github.com/wlad031/shoutrrr-web/blob/master/LICENSE)
 [![GitHub issues](https://img.shields.io/github/issues/wlad031/shoutrrr-web)](https://github.com/wlad031/shoutrrr-web/issues)
 
 A Flask-based web interface for the [Shoutrrr](https://containrrr.dev/shoutrrr/) notification router, enabling HTTP-based access to various notification services.
