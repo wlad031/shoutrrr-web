@@ -101,7 +101,7 @@ def prepare_message(message, service):
         app.logger.debug(f"Service: Telegram: {service.get('name')}")
         if "parseMode=MarkdownV2" in url:
             app.logger.debug(f"Service: Telegram MarkdownV2: {service.get('name')}")
-            message = re.sub(r"([!\.\-#])", r"\\\1", message)
+            message = re.sub(r"([!\.\-#\(\)])", r"\\\1", message)
             app.logger.debug(f"Escaped message for Telegram MarkdownV2:\n{message}")
     return message
 
