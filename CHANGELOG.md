@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.3](https://github.com/wlad031/shoutrrr-web/releases/tag/v0.2.3) - 2025-02-23
+
+### Changed
+- Escaping for special characters in Telegram MarkdownV2 messages: added `(` and `)` characters.
+
 ## [0.2.2](https://github.com/wlad031/shoutrrr-web/releases/tag/v0.2.2) - 2025-02-21
 
 This release doesn't bring significant changes, just a little bit better logging and refactoring.
